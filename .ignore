@@ -1,0 +1,4 @@
+# Ignore bulky build output when searching (used by ripgrep / Telescope)
+build/
+cmake-build-*/
+_deps/
