@@ -47,15 +47,6 @@ Cubemap::Cubemap(const std::filesystem::path &cubemap_folder) {
 
 Cubemap::~Cubemap() { glDeleteTextures(1, &m_CubemapID); }
 
-void Cubemap::Draw(const Camera &camera) {
-  glDepthFunc(GL_LEQUAL);
-  m_ShaderProgram.Use();
-  m_ShaderProgram.Set(camera.GetViewTransform(), "u_View");
-  m_ShaderProgram.Set(camera.GetProjectionTransform(), "u_Proj");
-
-  glBindTexture(GL_TEXTURE_CUBE_MAP, m_CubemapID);
-  m_BoxMesh.Draw();
-  glDepthFunc(GL_LESS);
-}
+void Cubemap::Bind(uint32_t slot) { glBindTextureUnit(slot, m_CubemapID); }
 
 } // namespace Sim

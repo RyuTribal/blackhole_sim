@@ -1,0 +1,32 @@
+#version 450
+
+#define LIGHT_SPEED = 299792458.0;
+#define GRAVITATIONAL_CONSTANT = 6.67430e-11;
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(rgba32f, binding = 0) writeonly uniform image2D uOutImage;
+layout(binding = 0) uniform samplerCube uSkybox;
+
+uniform mat4 uInvProj;
+uniform mat4 uInvView;
+uniform vec3 uCamPos;
+uniform vec2 uResolution;
+
+uniform vec3 uBHPos;
+uniform float uHorizonRadius;
+
+uniform float uBHMass;
+uniform float uStepMin;
+uniform float uStepMax;
+uniform float uFar;
+uniform int uMaxSteps;
+
+struct Ray {
+  vec3 position;
+  vec3 direction;
+}
+
+void main ( ) {
+
+}

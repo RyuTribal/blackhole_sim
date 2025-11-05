@@ -70,6 +70,43 @@ void ShaderProgram::Set(const glm::mat4 &matrix, const char *variable) {
   glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
+void ShaderProgram::Set(const glm::vec3 &vector, const char *variable) {
+  Use();
+  GLint loc = glGetUniformLocation(m_ShaderProgram, variable);
+  if (loc == -1) {
+    return;
+  }
+
+  glUniform3fv(loc, 1, glm::value_ptr(vector));
+}
+void ShaderProgram::Set(const glm::vec2 &vector, const char *variable) {
+  Use();
+  GLint loc = glGetUniformLocation(m_ShaderProgram, variable);
+  if (loc == -1) {
+    return;
+  }
+
+  glUniform2fv(loc, 1, glm::value_ptr(vector));
+}
+
+void ShaderProgram::Set(const float &number, const char *variable) {
+  Use();
+  GLint loc = glGetUniformLocation(m_ShaderProgram, variable);
+  if (loc == -1) {
+    return;
+  }
+  glUniform1fv(loc, 1, &number);
+}
+
+void ShaderProgram::Set(const int &number, const char *variable) {
+  Use();
+  GLint loc = glGetUniformLocation(m_ShaderProgram, variable);
+  if (loc == -1) {
+    return;
+  }
+  glUniform1iv(loc, 1, &number);
+}
+
 std::string ShaderProgram::LoadFromFile(const std::filesystem::path &path) {
   std::ifstream shader_file(path);
   std::string content((std::istreambuf_iterator<char>(shader_file)),

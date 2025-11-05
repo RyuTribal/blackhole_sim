@@ -13,6 +13,10 @@ public:
   void Use();
 
   void Set(const glm::mat4 &matrix, const char *variable);
+  void Set(const glm::vec3 &vector, const char *variable);
+  void Set(const glm::vec2 &vector, const char *variable);
+  void Set(const float &number, const char *variable);
+  void Set(const int &number, const char *variable);
 
 private:
   std::string LoadFromFile(const std::filesystem::path &path);

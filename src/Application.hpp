@@ -2,6 +2,8 @@
 
 #include "Camera.hpp"
 #include "Cubemap.hpp"
+#include "FinalImage.hpp"
+#include <memory>
 #include <string>
 
 struct GLFWwindow;
@@ -36,5 +38,7 @@ private: // Members
   Camera m_Camera{};
   int m_FramebufferWidth{0};
   int m_FramebufferHeight{0};
+
+  std::unique_ptr<FinalImage> m_FinalImage;
 };
 } // namespace Sim

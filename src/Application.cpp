@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "BlackHole.hpp"
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -121,8 +122,8 @@ void Application::Run() {
 
   glm::vec3 clearColor{0.10f, 0.13f, 0.17f};
 
-  Cubemap skybox{"assets/cubemap"};
   BlackHole black_hole{};
+  FinalImage final_image{m_Width, m_Height};
 
   while (!glfwWindowShouldClose(m_Window)) {
     glfwPollEvents();
@@ -145,9 +146,9 @@ void Application::Run() {
     glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    black_hole.Draw(m_Camera);
+    black_hole.Draw(m_Camera, final_image.GetOutputTexture());
 
-    skybox.Draw(m_Camera);
+    final_image.Draw(m_Camera);
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -156,6 +157,8 @@ void Application::Run() {
 }
 
 void Application::Shutdown() {
+  glFinish();
+
   if (m_ImguiInitialized) {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -164,15 +167,9 @@ void Application::Shutdown() {
   } else if (ImGui::GetCurrentContext()) {
     ImGui::DestroyContext();
   }
-
   if (m_Window) {
     glfwDestroyWindow(m_Window);
     m_Window = nullptr;
-  }
-
-  if (m_GlfwInitialized) {
-    glfwTerminate();
-    m_GlfwInitialized = false;
   }
 }
 
@@ -197,7 +194,7 @@ void Application::OnFramebufferResized(int width, int height) {
   glViewport(0, 0, width, height);
   auto viewport =
       glm::vec2{static_cast<float>(width), static_cast<float>(height)};
-  m_Camera.Update(viewport);
+  m_Camera.OnResize(viewport);
 }
 
 void Application::OnContentScaleChanged(float xScale, float yScale) {

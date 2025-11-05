@@ -5,22 +5,19 @@
 #include <algorithm>
 
 namespace Sim {
-Camera::Camera() { Update(m_ViewBox); }
+Camera::Camera() { OnResize(m_ViewPort); }
 
-void Camera::Update(const glm::vec2 &view_box) {
-  m_ViewBox = view_box;
-  if (m_ViewBox.x <= 0.0f) {
-    m_ViewBox.x = 1.0f;
-  }
-  if (m_ViewBox.y <= 0.0f) {
-    m_ViewBox.y = 1.0f;
-  }
+void Camera::OnResize(const glm::vec2 &view_port) {
+  m_ViewPort = view_port;
+  Update();
+}
 
+void Camera::Update() {
   m_ViewTransform =
       glm::lookAt(m_Position, m_Position + glm::vec3{0.f, 0.f, -1.f},
                   glm::vec3{0.f, 1.f, 0.f});
 
-  const float aspect = std::max(m_ViewBox.x / m_ViewBox.y, 0.01f);
+  const float aspect = std::max(m_ViewPort.x / m_ViewPort.y, 0.01f);
 
   m_ProjectionTransform =
       glm::perspective(glm::radians(m_FOVYDeg), aspect, m_Near, m_Far);
