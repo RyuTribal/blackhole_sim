@@ -30,7 +30,8 @@ ShaderProgram::ShaderProgram(
 
   for (size_t i = 0; i < shader_sources.size(); i++) {
     GLuint shader_type = GetShaderType((shader_files.begin() + i)->extension());
-    shader_ids.push_back(CompileShader(shader_sources[i].c_str(), shader_type));
+    shader_ids.push_back(CompileShader((shader_files.begin() + i)->filename(),
+                                       shader_sources[i].c_str(), shader_type));
   }
 
   m_ShaderProgram = glCreateProgram();
@@ -117,7 +118,8 @@ std::string ShaderProgram::LoadFromFile(const std::filesystem::path &path) {
   return content;
 }
 
-GLuint ShaderProgram::CompileShader(const char *source_code, GLuint type) {
+GLuint ShaderProgram::CompileShader(const std::filesystem::path &file_path,
+                                    const char *source_code, GLuint type) {
   GLuint shader = glCreateShader(type);
   glShaderSource(shader, 1, &source_code, NULL);
   glCompileShader(shader);
@@ -126,7 +128,8 @@ GLuint ShaderProgram::CompileShader(const char *source_code, GLuint type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
+    std::cerr << "ERROR::SHADER::COMPILATION_FAILED in file: "
+              << file_path.string() << "\n"
               << infoLog << std::endl;
     assert(false);
   };

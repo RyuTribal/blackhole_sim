@@ -1,28 +1,67 @@
-# Black hole simulator
+# Black Hole Simulator
 
-Generated OpenGL starter project using GLFW, GLAD, GLM, and Dear ImGui.
+A real-time gravitational lensing simulation using OpenGL.
 
-## Build
+## Build Instructions
 
-```bash
-cmake -S . -B build
-cmake --build build
-```
+### Using the build script
 
-Or use the provided helper script:
+The easiest way to build the project is to use the provided `build.sh` script.
 
 ```bash
-./build.sh [Debug|Release|RelWithDebInfo|MinSizeRel] [-r|--run] [-fmt|--format]
+./build.sh
 ```
 
-Flags (all optional):
-
-- `Debug|Release|RelWithDebInfo|MinSizeRel` — choose the CMake build type (default: `Debug`)
-- `-r`, `--run` — run the built binary after a successful build
-- `-fmt`, `--format` — run `./scripts/format-all.sh` before configuring (requires that script)
-
-## Run
+You can also specify the build type (Debug, Release, RelWithDebInfo, MinSizeRel) and run the application after building:
 
 ```bash
-./build/black_hole_simulator
+./build.sh Release --run
 ```
+
+For more options, see the script's help message:
+
+```bash
+./build.sh --help
+```
+
+### Manual build
+
+If you prefer to build the project manually, you can use CMake:
+
+1.  Create a build directory:
+    ```bash
+    mkdir build
+    cd build
+    ```
+
+2.  Configure CMake (specifying the build type is recommended):
+    ```bash
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    ```
+
+3.  Build the project:
+    ```bash
+    cmake --build .
+    ```
+
+4.  Run the executable:
+    ```bash
+    ./bin/Release/black_hole_simulator
+    ```
+
+## Controls
+
+### Camera Movement
+
+-   **Move Forward:** `W`
+-   **Move Backward:** `S`
+-   **Strafe Left:** `A`
+-   **Strafe Right:** `D`
+-   **Move Up:** `Space`
+-   **Move Down:** `Left Control`
+
+### Camera Rotation
+
+-   **Rotate:** Hold down the **right mouse button** and move the mouse to look around.
+
+You can adjust the camera sensitivity and movement speed, and invert the camera controls in the application's UI window.

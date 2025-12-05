@@ -25,6 +25,10 @@ private: // Methods
   void OnWindowResized(int width, int height);
   void OnFramebufferResized(int width, int height);
   void OnContentScaleChanged(float xScale, float yScale);
+  void OnMouseMove(float x, float y);
+  void OnMouseButton(int button, int action, int mods);
+
+  void CheckMovement();
 
 private: // Members
   std::string m_Title;
@@ -38,7 +42,11 @@ private: // Members
   Camera m_Camera{};
   int m_FramebufferWidth{0};
   int m_FramebufferHeight{0};
+  int m_MovementSpeed{5};
+  float m_DeltaTime{0.f};
 
   std::unique_ptr<FinalImage> m_FinalImage;
+
+  glm::vec2 m_LastMousePos{0.f, 0.f};
 };
 } // namespace Sim

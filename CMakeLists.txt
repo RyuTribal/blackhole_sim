@@ -43,7 +43,7 @@ FetchContent_Declare(
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.90.4
+    GIT_TAG v1.92.5
 )
 
 FetchContent_MakeAvailable(glfw glm glad)
@@ -71,7 +71,7 @@ target_include_directories(imgui_backend PUBLIC
     ${imgui_SOURCE_DIR}/backends
 )
 target_link_libraries(imgui_backend PUBLIC glfw glad_gl_core_43)
-target_compile_definitions(imgui_backend PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS IMGUI_IMPL_OPENGL_LOADER_GLAD2)
+target_compile_definitions(imgui_backend PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS IMGUI_IMPL_OPENGL_LOADER_GLAD2 GLM_ENABLE_EXPERIMENTAL)
 
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.cpp"

@@ -20,7 +20,8 @@ public:
 
 private:
   std::string LoadFromFile(const std::filesystem::path &path);
-  GLuint CompileShader(const char *source_code, GLuint type);
+  GLuint CompileShader(const std::filesystem::path &file_path,
+                       const char *source_code, GLuint type);
   GLuint GetShaderType(const std::filesystem::path &extension);
 
 private:

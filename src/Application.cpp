@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "BlackHole.hpp"
+#include <chrono>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
@@ -27,6 +28,21 @@ void glfw_error_callback(int error, const char *description) {
 } // namespace
 
 namespace Sim {
+
+std::string to_superscript(int number) {
+  const std::vector<std::string> supers = {
+      "\u2070", "\u00B9", "\u00B2", "\u00B3", "\u2074",
+      "\u2075", "\u2076", "\u2077", "\u2078", "\u2079"};
+
+  std::string num_str = std::to_string(number);
+  std::string result = "";
+
+  for (char c : num_str) {
+    int digit = c - '0';
+    result += supers[digit];
+  }
+  return result;
+}
 
 Application::Application(std::string title, int width, int height)
     : m_Title(std::move(title)), m_Width(width), m_Height(height) {
@@ -89,6 +105,25 @@ void Application::Initialize() {
     }
   });
 
+  glfwSetCursorPosCallback(m_Window, [](GLFWwindow *window, double x,
+                                        double y) {
+    auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+    if (app) {
+      app->OnMouseMove(x, y);
+      app->m_LastMousePos = {x, y};
+    }
+  });
+
+  glfwSetMouseButtonCallback(m_Window, [](GLFWwindow *window, int button,
+                                          int action, int mods) {
+    auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+    if (app) {
+      app->OnMouseButton(button, action, mods);
+    }
+  });
+
+  glfwSwapInterval(0);
+
   int framebufferWidth = 0;
   int framebufferHeight = 0;
   glfwGetFramebufferSize(m_Window, &framebufferWidth, &framebufferHeight);
@@ -104,6 +139,17 @@ void Application::Initialize() {
   ImGuiIO &io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   ImGui::StyleColorsDark();
+  ImFontConfig config;
+  config.MergeMode = true;
+
+  static const ImWchar ranges[] = {
+      0x0020, 0x00FF, // Standard Text
+      0x2070, 0x209F, // Superscripts (0, 4, 5, 6, 7, 8, 9)
+      0,              // Null Terminator
+  };
+
+  io.Fonts->AddFontFromFileTTF("assets/fonts/JuliaMono/JuliaMono-Regular.ttf",
+                               18.f, NULL, ranges);
 
   if (!ImGui_ImplGlfw_InitForOpenGL(m_Window, true)) {
     throw std::runtime_error("Failed to initialize Dear ImGui GLFW backend.");
@@ -125,16 +171,70 @@ void Application::Run() {
   BlackHole black_hole{};
   FinalImage final_image{m_Width, m_Height};
 
+  auto prev_time =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::high_resolution_clock::now().time_since_epoch())
+          .count();
+
+  std::string pretty_exponent = to_superscript(30);
+
   while (!glfwWindowShouldClose(m_Window)) {
+
     glfwPollEvents();
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Hello, ImGui");
-    ImGui::Text("Welcome to %s", m_Title.c_str());
-    ImGui::ColorEdit3("Clear Color", glm::value_ptr(clearColor));
+    ImGui::Begin(m_Title.c_str());
+    ImGui::Text("Black hole settings");
+    ImGui::DragFloat3("Position", &black_hole.m_Position.x, 0.1f);
+    float mass = black_hole.GetMass();
+    if (ImGui::DragFloat("Solar Mass", &mass, 0.1f)) {
+      black_hole.SetMass(mass);
+    }
+    ImGui::Text((const char *)u8"NOTE: 1 Solar mass = Mass of our Sun \u2248 "
+                              u8"1.989 \u00D7 10%s kg",
+                pretty_exponent.c_str());
+    ImGui::Text("Event horizon: %.6f", black_hole.GetEventHorizon());
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+    ImGui::Text("Accretion Disc");
+    ImGui::Checkbox("Show Disc", &black_hole.m_ShowDisk);
+
+    if (black_hole.m_ShowDisk) {
+      ImGui::DragFloat("Gravity Bend", &black_hole.m_BendFactor, 0.1f, 0.0f,
+                       15.0f);
+      ImGui::DragFloat("Disc Height", &black_hole.m_DiskHeight, 0.01f, 0.01f,
+                       2.0f);
+      ImGui::DragFloat("Intensity", &black_hole.m_DiskIntensity, 0.5f, 0.0f,
+                       200.0f);
+      ImGui::DragFloat("Density", &black_hole.m_DiskAlpha, 0.1f, 0.0f, 20.0f);
+    }
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+    ImGui::Text("Simulation settings");
+    ImGui::DragFloat("Min step", &black_hole.m_StepMin, 0.001f);
+    ImGui::DragFloat("Max step", &black_hole.m_StepMax, 0.1f);
+    ImGui::DragInt("Max steps", &black_hole.m_MaxSteps);
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+    ImGui::Text("Controls");
+    float camera_sensitivity = m_Camera.GetSensitivity();
+    if (ImGui::DragFloat("Camera sensitivity", &camera_sensitivity, 0.1f)) {
+      m_Camera.SetSensitivity(camera_sensitivity);
+    }
+    bool camera_inverse_controls = m_Camera.GetInverseCamera();
+    if (ImGui::Checkbox("Inverse Camera Controls", &camera_inverse_controls)) {
+      m_Camera.SetInverseCamera(camera_inverse_controls);
+    }
+    ImGui::DragInt("Movement Speed", &m_MovementSpeed);
+    auto camera_pos = m_Camera.GetPosition();
+    ImGui::Text("Position X: %.2f, Y: %.2f, Z: %.2f", camera_pos.x,
+                camera_pos.y, camera_pos.z);
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+    ImGui::Text("Renderer info");
     ImGui::Text("Renderer: %s",
                 reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
     ImGui::Text("OpenGL: %s",
@@ -146,6 +246,8 @@ void Application::Run() {
     glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    CheckMovement();
+
     black_hole.Draw(m_Camera, final_image.GetOutputTexture());
 
     final_image.Draw(m_Camera);
@@ -153,6 +255,14 @@ void Application::Run() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(m_Window);
+
+    auto curr_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch())
+            .count();
+
+    m_DeltaTime = curr_time - prev_time;
+    prev_time = curr_time;
   }
 }
 
@@ -170,6 +280,63 @@ void Application::Shutdown() {
   if (m_Window) {
     glfwDestroyWindow(m_Window);
     m_Window = nullptr;
+  }
+}
+
+void Application::CheckMovement() {
+  glm::vec3 move_dir{0.f};
+
+  glm::vec3 forward = m_Camera.GetForward();
+  glm::vec3 right = m_Camera.GetRight();
+  glm::vec3 up = m_Camera.GetUp();
+
+  if (glfwGetKey(m_Window, GLFW_KEY_W) == GLFW_PRESS)
+    move_dir += forward;
+
+  if (glfwGetKey(m_Window, GLFW_KEY_S) == GLFW_PRESS)
+    move_dir -= forward;
+
+  if (glfwGetKey(m_Window, GLFW_KEY_A) == GLFW_PRESS)
+    move_dir -= right;
+
+  if (glfwGetKey(m_Window, GLFW_KEY_D) == GLFW_PRESS)
+    move_dir += right;
+
+  if (glfwGetKey(m_Window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    move_dir += up;
+
+  if (glfwGetKey(m_Window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    move_dir -= up;
+
+  if (glm::length(move_dir) > 0.001f) {
+
+    move_dir = glm::normalize(move_dir);
+
+    float dt = m_DeltaTime / 1000.0f;
+
+    glm::vec3 displacement =
+        move_dir * static_cast<float>(m_MovementSpeed) * dt;
+
+    m_Camera.Move(displacement);
+  }
+}
+
+void Application::OnMouseMove(float x, float y) {
+
+  if (glfwGetMouseButton(m_Window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+    glm::vec2 delta_pos = {x - m_LastMousePos.x, y - m_LastMousePos.y};
+
+    m_Camera.Rotate(delta_pos.x, delta_pos.y);
+  }
+}
+
+void Application::OnMouseButton(int button, int action, int mods) {
+  if (button == GLFW_MOUSE_BUTTON_2) {
+    if (action == GLFW_PRESS) {
+      glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+      glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
   }
 }
 
