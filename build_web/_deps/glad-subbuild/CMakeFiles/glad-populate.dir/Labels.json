@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/CMakeFiles/glad-populate"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/CMakeFiles/glad-populate.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/CMakeFiles/glad-populate-complete.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-build.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-configure.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-download.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-install.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-mkdir.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-patch_disconnected.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-test.rule"
+		},
+		{
+			"file" : "/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/glad-populate-prefix/src/glad-populate-stamp/glad-populate-update_disconnected.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"glad-populate"
+		],
+		"name" : "glad-populate"
+	}
+}

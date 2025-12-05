@@ -1,7 +1,8 @@
 #include "FinalImage.hpp"
 
 namespace Sim {
-FinalImage::FinalImage(int width, int height) {
+FinalImage::FinalImage(int width, int height)
+{
   glGenTextures(1, &m_OutputTexture);
   glBindTexture(GL_TEXTURE_2D, m_OutputTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -11,12 +12,19 @@ FinalImage::FinalImage(int width, int height) {
 
   OnResize(width, height);
 
+  glGenFramebuffers(1, &m_FBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         m_OutputTexture, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   glGenVertexArrays(1, &m_DummyVAO);
 }
 
 FinalImage::~FinalImage() {
   glDeleteVertexArrays(1, &m_DummyVAO);
   glDeleteTextures(1, &m_OutputTexture);
+  glDeleteFramebuffers(1, &m_FBO);
 }
 
 void FinalImage::OnResize(int width, int height) {
@@ -36,8 +44,14 @@ void FinalImage::Draw(const Camera &camera) {
   }
 
   m_ShaderProgram.Use();
+  glUniform1i(glGetUniformLocation(m_ShaderProgram.GetID(), "uFinal"), 0);
   glDisable(GL_DEPTH_TEST);
+#if defined(IS_WEB)
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_OutputTexture);
+#else
   glBindTextureUnit(0, m_OutputTexture);
+#endif
 
   glBindVertexArray(m_DummyVAO);
   glDrawArrays(GL_TRIANGLES, 0, 3);

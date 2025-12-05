@@ -3,9 +3,13 @@
 #include "Camera.hpp"
 #include "Cubemap.hpp"
 #include "ShaderProgram.hpp"
+#include "Quad.hpp"
 #include <chrono>
+#include <memory>
 
 namespace Sim {
+
+class FinalImage;
 
 class BlackHole {
 public:
@@ -17,7 +21,7 @@ public:
   BlackHole();
   ~BlackHole() = default;
 
-  void Draw(const Camera &camera, GLuint output_target);
+  void Draw(const Camera &camera, FinalImage &final_image);
 
   float GetMass() const { return m_SolarMass; }
   float GetEventHorizon() const { return m_EventHorizon; }
@@ -38,7 +42,13 @@ public:
 
 private:
   Cubemap m_Skybox{"assets/cubemap"};
+  
+#if defined(IS_WEB)
+  ShaderProgram m_ShaderProgram{"assets/shaders/fullscreen_web.vert", "assets/shaders/blackhole.frag"};
+  std::unique_ptr<Quad> m_Quad;
+#else
   ShaderProgram m_ShaderProgram{"assets/shaders/blackhole.comp"};
+#endif
 
   float m_SolarMass = 0.5f;
   float m_EventHorizon = 2.0f * m_SolarMass; // Rs = 2GM/c^2

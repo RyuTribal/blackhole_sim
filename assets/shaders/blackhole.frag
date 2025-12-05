@@ -1,0 +1,179 @@
+#version 300 es
+precision highp float;
+
+out vec4 fragColor;
+
+in vec2 vUv;
+
+uniform vec2 uResolution;
+uniform samplerCube uSkybox;
+
+uniform mat4 uInvProj;
+uniform mat4 uInvView;
+uniform vec3 uCamPos;
+uniform vec3 uBHPos;
+uniform float uBHMass;
+uniform int uMaxSteps;
+uniform float uHorizonRadius;
+uniform float uTime;
+
+uniform bool uShowDisk;
+uniform float uDiskHeight;
+uniform float uDiskIntensity;
+uniform float uDiskAlpha;
+uniform float uBendFactor;
+
+#define DISK_INNER (uHorizonRadius * 2.5)
+#define DISK_OUTER (uHorizonRadius * 13.0)
+#define MAX_DIST 100.0
+
+float hash(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 4; i++) {
+    v += noise(p) * amp;
+    p *= 2.0;
+    amp *= 0.5;
+  }
+  return v;
+}
+
+vec3 getFireColor(float t) {
+  t = max(t, 0.01);
+  vec3 c1 = vec3(0.1, 0.01, 0.01);
+  vec3 c2 = vec3(1.0, 0.3, 0.0);
+  vec3 c3 = vec3(1.0, 0.9, 0.4);
+  vec3 c4 = vec3(0.8, 0.9, 1.0);
+  vec3 col = mix(c1, c2, smoothstep(0.0, 0.3, t));
+  col = mix(col, c3, smoothstep(0.3, 0.7, t));
+  col = mix(col, c4, smoothstep(0.7, 1.2, t));
+  return col;
+}
+
+vec4 getVolumetricGas(vec3 pos, float distToBH) {
+  float angle = atan(pos.z, pos.x);
+  float speed = 10.0 * pow(distToBH, -0.75);
+  float swirl = angle + (speed * uTime * 0.5);
+
+  vec2 uv = vec2(distToBH * 2.0, swirl);
+
+  float warp = fbm(uv * 2.0 + vec2(uTime * 0.2, 0.0));
+  float gasNoise = fbm(uv + warp * 1.5);
+
+  float ringPattern = sin(distToBH * 8.0 + gasNoise * 3.0);
+  float lanes = smoothstep(-0.5, 0.8, ringPattern);
+
+  float verticalFade = exp(-5.0 * abs(pos.y));
+  float radialFade = smoothstep(DISK_INNER, DISK_INNER + 1.0, distToBH) * smoothstep(DISK_OUTER, DISK_OUTER - 2.0, distToBH);
+
+  if (radialFade < 0.01) return vec4(0.0);
+
+  float density = (0.3 + 0.7 * lanes) * gasNoise * verticalFade * radialFade;
+  density = smoothstep(0.1, 1.0, density);
+
+  float t = 1.0 - smoothstep(DISK_INNER, DISK_OUTER, distToBH);
+  float localTemp = t + (warp * 0.3) - (density * 0.2);
+
+  vec3 velDir = normalize(vec3(-pos.z, 0.0, pos.x));
+  vec3 viewDir = normalize(pos - uCamPos);
+  float vDotN = dot(velDir, viewDir);
+  float doppler = pow(1.0 + 0.5 * vDotN, 2.5);
+
+  vec3 emission = getFireColor(localTemp * doppler);
+  return vec4(emission * uDiskIntensity, clamp(density * uDiskAlpha, 0.0, 1.0));
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uResolution.xy;
+  vec2 ndc = uv * 2.0 - 1.0;
+  vec4 target = uInvProj * vec4(ndc.x, ndc.y, 1.0, 1.0);
+  vec3 rayDirView = normalize(target.xyz / target.w);
+  vec3 rayDirWorld = (uInvView * vec4(rayDirView, 0.0)).xyz;
+
+  vec3 currentPos = uCamPos;
+  vec3 currentDir = normalize(rayDirWorld);
+
+  float dither = hash(uv * 100.0 + uTime);
+  currentPos += currentDir * dither * 0.2;
+
+  vec3 accumColor = vec3(0.0);
+  float accumAlpha = 0.0;
+  bool hitEventHorizon = false;
+
+  for (int i = 0; i < uMaxSteps; i++) {
+    vec3 posLocal = currentPos - uBHPos;
+    float distSq = dot(posLocal, posLocal);
+    float dist = sqrt(distSq);
+
+    if (dist < uHorizonRadius) {
+      hitEventHorizon = true;
+      break;
+    }
+    if (dist > MAX_DIST) break;
+
+    float gravityStrength = (uBHMass * uBendFactor) / distSq;
+
+    float stepSize = max(dist * 0.05, 0.015);
+
+    if (dist < uHorizonRadius * 4.0) {
+      stepSize = min(stepSize, dist * 0.02);
+    }
+
+    stepSize = min(stepSize, 0.10 / (gravityStrength + 0.0001));
+
+    if (uShowDisk) {
+      if (abs(posLocal.y) < uDiskHeight * 4.0 && dist < DISK_OUTER) {
+        float volumeStep = min(stepSize, 0.05);
+
+        if (abs(posLocal.y) < uDiskHeight * 2.0 && dist > DISK_INNER) {
+          vec4 gas = getVolumetricGas(posLocal, dist);
+          float density = gas.a * volumeStep;
+          accumColor += gas.rgb * density * (1.0 - accumAlpha);
+          accumAlpha += density;
+          if (accumAlpha >= 0.99) break;
+        }
+        stepSize = volumeStep;
+      }
+    }
+
+    vec3 toBH = normalize(-posLocal);
+    float crossProd = length(cross(currentDir, toBH));
+    float bend = gravityStrength * stepSize;
+
+    bend = min(bend, 0.5);
+
+    currentDir = normalize(mix(currentDir, toBH, bend * crossProd));
+    currentPos += currentDir * stepSize;
+  }
+
+  vec3 finalPixel = vec3(0.0);
+
+  if (hitEventHorizon) {
+    finalPixel = accumColor;
+  } else {
+    vec3 bg = texture(uSkybox, currentDir).rgb;
+    finalPixel = accumColor + bg * (1.0 - accumAlpha);
+  }
+
+  vec3 x = max(vec3(0.0), finalPixel - 0.004);
+  finalPixel = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
+
+  fragColor = vec4(finalPixel, 1.0);
+}

@@ -7,13 +7,19 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <sstream>
 
 namespace Sim {
 
+#if defined(IS_WEB)
+static const std::unordered_map<std::string, GLuint> s_ShaderTypes = {
+    {".vert", GL_VERTEX_SHADER},       {".frag", GL_FRAGMENT_SHADER}};
+#else
 static const std::unordered_map<std::string, GLuint> s_ShaderTypes = {
     {".vert", GL_VERTEX_SHADER},       {".frag", GL_FRAGMENT_SHADER},
     {".geom", GL_GEOMETRY_SHADER},     {".comp", GL_COMPUTE_SHADER},
     {".tesc", GL_TESS_CONTROL_SHADER}, {".tese", GL_TESS_EVALUATION_SHADER}};
+#endif
 
 ShaderProgram::ShaderProgram(
     std::initializer_list<std::filesystem::path> shader_files) {

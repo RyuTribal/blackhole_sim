@@ -1,6 +1,10 @@
 #pragma once
 #include <filesystem>
+#if defined(IS_WEB)
+#include <glad/gles2.h>
+#else
 #include <glad/gl.h>
+#endif
 #include <glm/glm.hpp>
 #include <initializer_list>
 
@@ -17,6 +21,8 @@ public:
   void Set(const glm::vec2 &vector, const char *variable);
   void Set(const float &number, const char *variable);
   void Set(const int &number, const char *variable);
+
+  GLuint GetID() const { return m_ShaderProgram; }
 
 private:
   std::string LoadFromFile(const std::filesystem::path &path);

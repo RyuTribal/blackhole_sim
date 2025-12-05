@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Hole Simulator</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        #mobile-unsupported {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
+            padding-top: 20%;
+            box-sizing: border-box;
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: monospace;
+        }
+        #controls h3 {
+            margin-top: 0;
+        }
+        #controls ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #controls li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="mobile-unsupported">
+        <p>This application is not supported on mobile devices due to lack of touch controls.</p>
+    </div>
+    <canvas id="canvas"></canvas>
+    <div id="status">Initializing...</div>
+    <div id="controls">
+        <h3>Controls</h3>
+        <ul>
+            <li><b>W, A, S, D</b>: Move Camera</li>
+            <li><b>Space</b>: Move Up</li>
+            <li><b>Left Ctrl</b>: Move Down</li>
+            <li><b>Right Mouse + Drag</b>: Rotate</li>
+        </ul>
+    </div>
+
+    <script type='text/javascript'>
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            document.getElementById('mobile-unsupported').style.display = 'block';
+            document.getElementById('canvas').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+        }
+
+        var statusElement = document.getElementById('status');
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function() {
+                return function(text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    console.log(text);
+                };
+            })(),
+            printErr: function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                console.error(text);
+            },
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+                canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); });
+                return canvas;
+            })(),
+            setStatus: function(text) {
+                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+                if (text === Module.setStatus.last.text) return;
+                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                var now = Date.now();
+                if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, throttle it
+                Module.setStatus.last.time = now;
+                Module.setStatus.last.text = text;
+                if (m)
+                    text = m[1];
+                statusElement.innerHTML = text;
+                if(text === '') {
+                    statusElement.style.display = 'none';
+                }
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function(left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : '');
+            }
+        };
+        Module.setStatus('Downloading...');
+        window.onerror = function() {
+            Module.setStatus('Exception thrown, see JavaScript console');
+        };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>

@@ -3,6 +3,8 @@
 #include "Camera.hpp"
 #include "Cubemap.hpp"
 #include "FinalImage.hpp"
+#include "BlackHole.hpp"
+#include <glm/glm.hpp>
 #include <memory>
 #include <string>
 
@@ -20,6 +22,7 @@ public:
   void Run();
 
 private: // Methods
+  void MainLoop();
   void Initialize();
   void Shutdown();
   void OnWindowResized(int width, int height);
@@ -45,8 +48,12 @@ private: // Members
   int m_MovementSpeed{5};
   float m_DeltaTime{0.f};
 
+  std::unique_ptr<BlackHole> m_BlackHole;
   std::unique_ptr<FinalImage> m_FinalImage;
 
   glm::vec2 m_LastMousePos{0.f, 0.f};
+  long long m_PrevTime{0};
+  glm::vec3 m_ClearColor{0.10f, 0.13f, 0.17f};
+  std::string m_PrettyExponent;
 };
 } // namespace Sim

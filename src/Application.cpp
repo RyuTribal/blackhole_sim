@@ -1,5 +1,10 @@
 #include "Application.hpp"
 #include "BlackHole.hpp"
+
+#if defined(IS_WEB)
+#include <emscripten.h>
+#endif
+
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -9,7 +14,11 @@
 #define GLFW_INCLUDE_NONE
 #endif
 #include <GLFW/glfw3.h>
+#if defined(IS_WEB)
+#include <glad/gles2.h>
+#else
 #include <glad/gl.h>
+#endif
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -47,6 +56,12 @@ std::string to_superscript(int number) {
 Application::Application(std::string title, int width, int height)
     : m_Title(std::move(title)), m_Width(width), m_Height(height) {
   Initialize();
+  m_BlackHole = std::make_unique<BlackHole>();
+  m_FinalImage = std::make_unique<FinalImage>(m_Width, m_Height);
+  m_PrevTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now().time_since_epoch())
+                   .count();
+  m_PrettyExponent = to_superscript(30);
 }
 
 Application::~Application() { Shutdown(); }
@@ -58,11 +73,17 @@ void Application::Initialize() {
   }
   m_GlfwInitialized = true;
 
+#if defined(IS_WEB)
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#else
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if defined(__APPLE__)
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 #endif
   glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
@@ -76,9 +97,15 @@ void Application::Initialize() {
   glfwSwapInterval(1);
 
   glfwSetWindowUserPointer(m_Window, this);
+#if defined(IS_WEB)
+  if (!gladLoadGLES2(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))) {
+    throw std::runtime_error("Failed to initialize GLAD.");
+  }
+#else
   if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))) {
     throw std::runtime_error("Failed to initialize GLAD.");
   }
+#endif
 
   glEnable(GL_DEPTH_TEST);
 
@@ -124,11 +151,6 @@ void Application::Initialize() {
 
   glfwSwapInterval(0);
 
-  int framebufferWidth = 0;
-  int framebufferHeight = 0;
-  glfwGetFramebufferSize(m_Window, &framebufferWidth, &framebufferHeight);
-  OnFramebufferResized(framebufferWidth, framebufferHeight);
-
   float xScale = 1.0f;
   float yScale = 1.0f;
   glfwGetWindowContentScale(m_Window, &xScale, &yScale);
@@ -154,11 +176,110 @@ void Application::Initialize() {
   if (!ImGui_ImplGlfw_InitForOpenGL(m_Window, true)) {
     throw std::runtime_error("Failed to initialize Dear ImGui GLFW backend.");
   }
+#if defined(IS_WEB)
+  if (!ImGui_ImplOpenGL3_Init("#version 300 es")) {
+    throw std::runtime_error("Failed to initialize Dear ImGui OpenGL backend.");
+  }
+#else
   if (!ImGui_ImplOpenGL3_Init("#version 410")) {
     throw std::runtime_error("Failed to initialize Dear ImGui OpenGL backend.");
   }
+#endif
 
   m_ImguiInitialized = true;
+}
+
+void Application::MainLoop() {
+  if (glfwWindowShouldClose(m_Window)) {
+#if defined(IS_WEB)
+    emscripten_cancel_main_loop();
+#endif
+    return;
+  }
+
+  glfwPollEvents();
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
+  ImGui::Begin(m_Title.c_str());
+  ImGui::Text("Black hole settings");
+  ImGui::DragFloat3("Position", &m_BlackHole->m_Position.x, 0.1f);
+  float mass = m_BlackHole->GetMass();
+  if (ImGui::DragFloat("Solar Mass", &mass, 0.1f)) {
+    m_BlackHole->SetMass(mass);
+  }
+  ImGui::Text((const char *)u8"NOTE: 1 Solar mass = Mass of our Sun \u2248 "
+                            u8"1.989 \u00D7 10%s kg",
+              m_PrettyExponent.c_str());
+  ImGui::Text("Event horizon: %.6f", m_BlackHole->GetEventHorizon());
+  ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+  ImGui::Text("Accretion Disc");
+  ImGui::Checkbox("Show Disc", &m_BlackHole->m_ShowDisk);
+
+  if (m_BlackHole->m_ShowDisk) {
+    ImGui::DragFloat("Gravity Bend", &m_BlackHole->m_BendFactor, 0.1f, 0.0f,
+                     15.0f);
+    ImGui::DragFloat("Disc Height", &m_BlackHole->m_DiskHeight, 0.01f, 0.01f,
+                     2.0f);
+    ImGui::DragFloat("Intensity", &m_BlackHole->m_DiskIntensity, 0.5f, 0.0f,
+                     200.0f);
+    ImGui::DragFloat("Density", &m_BlackHole->m_DiskAlpha, 0.1f, 0.0f, 20.0f);
+  }
+  ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+  ImGui::Text("Simulation settings");
+  ImGui::DragFloat("Min step", &m_BlackHole->m_StepMin, 0.001f);
+  ImGui::DragFloat("Max step", &m_BlackHole->m_StepMax, 0.1f);
+  ImGui::DragInt("Max steps", &m_BlackHole->m_MaxSteps);
+  ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+  ImGui::Text("Controls");
+  float camera_sensitivity = m_Camera.GetSensitivity();
+  if (ImGui::DragFloat("Camera sensitivity", &camera_sensitivity, 0.1f)) {
+    m_Camera.SetSensitivity(camera_sensitivity);
+  }
+  bool camera_inverse_controls = m_Camera.GetInverseCamera();
+  if (ImGui::Checkbox("Inverse Camera Controls", &camera_inverse_controls)) {
+    m_Camera.SetInverseCamera(camera_inverse_controls);
+  }
+  ImGui::DragInt("Movement Speed", &m_MovementSpeed);
+  auto camera_pos = m_Camera.GetPosition();
+  ImGui::Text("Position X: %.2f, Y: %.2f, Z: %.2f", camera_pos.x,
+              camera_pos.y, camera_pos.z);
+  ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+  ImGui::Text("Renderer info");
+  ImGui::Text("Renderer: %s",
+              reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
+  ImGui::Text("OpenGL: %s",
+              reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+  ImGui::End();
+
+  ImGui::Render();
+
+  glClearColor(m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  CheckMovement();
+
+  m_BlackHole->Draw(m_Camera, *m_FinalImage);
+
+  m_FinalImage->Draw(m_Camera);
+
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  glfwSwapBuffers(m_Window);
+
+  auto curr_time =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::high_resolution_clock::now().time_since_epoch())
+          .count();
+
+  m_DeltaTime = curr_time - m_PrevTime;
+  m_PrevTime = curr_time;
 }
 
 void Application::Run() {
@@ -166,104 +287,15 @@ void Application::Run() {
     throw std::runtime_error("Application window is not available.");
   }
 
-  glm::vec3 clearColor{0.10f, 0.13f, 0.17f};
-
-  BlackHole black_hole{};
-  FinalImage final_image{m_Width, m_Height};
-
-  auto prev_time =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::high_resolution_clock::now().time_since_epoch())
-          .count();
-
-  std::string pretty_exponent = to_superscript(30);
-
+#if defined(IS_WEB)
+  emscripten_set_main_loop_arg(
+      [](void *arg) { static_cast<Application *>(arg)->MainLoop(); }, this, 0,
+      1);
+#else
   while (!glfwWindowShouldClose(m_Window)) {
-
-    glfwPollEvents();
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::Begin(m_Title.c_str());
-    ImGui::Text("Black hole settings");
-    ImGui::DragFloat3("Position", &black_hole.m_Position.x, 0.1f);
-    float mass = black_hole.GetMass();
-    if (ImGui::DragFloat("Solar Mass", &mass, 0.1f)) {
-      black_hole.SetMass(mass);
-    }
-    ImGui::Text((const char *)u8"NOTE: 1 Solar mass = Mass of our Sun \u2248 "
-                              u8"1.989 \u00D7 10%s kg",
-                pretty_exponent.c_str());
-    ImGui::Text("Event horizon: %.6f", black_hole.GetEventHorizon());
-    ImGui::Dummy(ImVec2(0.0f, 20.0f));
-
-    ImGui::Text("Accretion Disc");
-    ImGui::Checkbox("Show Disc", &black_hole.m_ShowDisk);
-
-    if (black_hole.m_ShowDisk) {
-      ImGui::DragFloat("Gravity Bend", &black_hole.m_BendFactor, 0.1f, 0.0f,
-                       15.0f);
-      ImGui::DragFloat("Disc Height", &black_hole.m_DiskHeight, 0.01f, 0.01f,
-                       2.0f);
-      ImGui::DragFloat("Intensity", &black_hole.m_DiskIntensity, 0.5f, 0.0f,
-                       200.0f);
-      ImGui::DragFloat("Density", &black_hole.m_DiskAlpha, 0.1f, 0.0f, 20.0f);
-    }
-    ImGui::Dummy(ImVec2(0.0f, 20.0f));
-
-    ImGui::Text("Simulation settings");
-    ImGui::DragFloat("Min step", &black_hole.m_StepMin, 0.001f);
-    ImGui::DragFloat("Max step", &black_hole.m_StepMax, 0.1f);
-    ImGui::DragInt("Max steps", &black_hole.m_MaxSteps);
-    ImGui::Dummy(ImVec2(0.0f, 20.0f));
-
-    ImGui::Text("Controls");
-    float camera_sensitivity = m_Camera.GetSensitivity();
-    if (ImGui::DragFloat("Camera sensitivity", &camera_sensitivity, 0.1f)) {
-      m_Camera.SetSensitivity(camera_sensitivity);
-    }
-    bool camera_inverse_controls = m_Camera.GetInverseCamera();
-    if (ImGui::Checkbox("Inverse Camera Controls", &camera_inverse_controls)) {
-      m_Camera.SetInverseCamera(camera_inverse_controls);
-    }
-    ImGui::DragInt("Movement Speed", &m_MovementSpeed);
-    auto camera_pos = m_Camera.GetPosition();
-    ImGui::Text("Position X: %.2f, Y: %.2f, Z: %.2f", camera_pos.x,
-                camera_pos.y, camera_pos.z);
-    ImGui::Dummy(ImVec2(0.0f, 20.0f));
-
-    ImGui::Text("Renderer info");
-    ImGui::Text("Renderer: %s",
-                reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
-    ImGui::Text("OpenGL: %s",
-                reinterpret_cast<const char *>(glGetString(GL_VERSION)));
-    ImGui::End();
-
-    ImGui::Render();
-
-    glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    CheckMovement();
-
-    black_hole.Draw(m_Camera, final_image.GetOutputTexture());
-
-    final_image.Draw(m_Camera);
-
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    glfwSwapBuffers(m_Window);
-
-    auto curr_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::high_resolution_clock::now().time_since_epoch())
-            .count();
-
-    m_DeltaTime = curr_time - prev_time;
-    prev_time = curr_time;
+    MainLoop();
   }
+#endif
 }
 
 void Application::Shutdown() {

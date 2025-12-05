@@ -1,6 +1,10 @@
 #pragma once
 #include <filesystem>
+#if defined(IS_WEB)
+#include <glad/gles2.h>
+#else
 #include <glad/gl.h>
+#endif
 
 namespace Sim {
 class Cubemap {

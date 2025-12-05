@@ -47,6 +47,13 @@ Cubemap::Cubemap(const std::filesystem::path &cubemap_folder) {
 
 Cubemap::~Cubemap() { glDeleteTextures(1, &m_CubemapID); }
 
-void Cubemap::Bind(uint32_t slot) { glBindTextureUnit(slot, m_CubemapID); }
+void Cubemap::Bind(uint32_t slot) {
+#if defined(IS_WEB)
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_CubemapID);
+#else
+    glBindTextureUnit(slot, m_CubemapID);
+#endif
+}
 
 } // namespace Sim

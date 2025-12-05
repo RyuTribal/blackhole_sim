@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"/mnt/programs2/blackhole_sim/build_web/cmake_install.cmake",
+		"/mnt/programs2/blackhole_sim/build_web/_deps/glm-build/cmake_install.cmake",
+		"/mnt/programs2/blackhole_sim/build_web/_deps/glm-build/glm/cmake_install.cmake",
+		"/mnt/programs2/blackhole_sim/build_web/_deps/glad-build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,32 @@
+_deps/glfw-build/src/CMakeFiles/glfw.dir/posix_time.c.o: \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/posix_time.c \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/internal.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/../include/GLFW/glfw3.h \
+  /opt/emscripten-llvm/lib/clang/22/include/stddef.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/stddef.h \
+  /opt/emscripten-llvm/lib/clang/22/include/__stddef_header_macro.h \
+  /opt/emscripten-llvm/lib/clang/22/include/__stddef_ptrdiff_t.h \
+  /opt/emscripten-llvm/lib/clang/22/include/__stddef_size_t.h \
+  /opt/emscripten-llvm/lib/clang/22/include/__stddef_wchar_t.h \
+  /opt/emscripten-llvm/lib/clang/22/include/__stddef_null.h \
+  /opt/emscripten-llvm/lib/clang/22/include/__stddef_offsetof.h \
+  /opt/emscripten-llvm/lib/clang/22/include/stdint.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/stdint.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/bits/alltypes.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/bits/stdint.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/platform.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/null_platform.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/null_joystick.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/posix_thread.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/pthread.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/features.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/sched.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/compat/time.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/time.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/posix_time.h \
+  /mnt/programs2/blackhole_sim/build_web/_deps/glfw-src/src/../include/GLFW/glfw3native.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/unistd.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/wasi/api.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/bits/posix.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/sys/time.h \
+  /home/ryutribal/.cache/emscripten/sysroot/include/sys/select.h

@@ -1,5 +1,6 @@
 # Build artifacts
 /build/
+.cache/
 /cmake-build-*/
 /CMakeFiles/
 /Testing/

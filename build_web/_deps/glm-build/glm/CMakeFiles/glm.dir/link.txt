@@ -1,0 +1,2 @@
+/usr/lib/emscripten/emar qc libglm.a CMakeFiles/glm.dir/detail/glm.cpp.o
+/usr/lib/emscripten/emranlib libglm.a
