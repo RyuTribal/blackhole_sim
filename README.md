@@ -2,6 +2,8 @@
 
 A real-time gravitational lensing simulation using OpenGL.
 
+![Black Hole Simulator Screenshot](github_assets/screenshot.png)
+
 ## Build Instructions
 
 ### Using the build script
@@ -29,17 +31,20 @@ For more options, see the script's help message:
 If you prefer to build the project manually, you can use CMake:
 
 1.  Create a build directory:
+
     ```bash
     mkdir build
     cd build
     ```
 
 2.  Configure CMake (specifying the build type is recommended):
+
     ```bash
     cmake .. -DCMAKE_BUILD_TYPE=Release
     ```
 
 3.  Build the project:
+
     ```bash
     cmake --build .
     ```
@@ -53,15 +58,16 @@ If you prefer to build the project manually, you can use CMake:
 
 ### Camera Movement
 
--   **Move Forward:** `W`
--   **Move Backward:** `S`
--   **Strafe Left:** `A`
--   **Strafe Right:** `D`
--   **Move Up:** `Space`
--   **Move Down:** `Left Control`
+- **Move Forward:** `W`
+- **Move Backward:** `S`
+- **Strafe Left:** `A`
+- **Strafe Right:** `D`
+- **Move Up:** `Space`
+- **Move Down:** `Left Control`
 
 ### Camera Rotation
 
--   **Rotate:** Hold down the **right mouse button** and move the mouse to look around.
+- **Rotate:** Hold down the **right mouse button** and move the mouse to look around.
 
 You can adjust the camera sensitivity and movement speed, and invert the camera controls in the application's UI window.
+
