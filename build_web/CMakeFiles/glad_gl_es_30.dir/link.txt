@@ -1,2 +1,0 @@
-/usr/lib/emscripten/emar qc libglad_gl_es_30.a CMakeFiles/glad_gl_es_30.dir/gladsources/glad_gl_es_30/src/gles2.c.o
-/usr/lib/emscripten/emranlib libglad_gl_es_30.a

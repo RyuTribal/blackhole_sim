@@ -1,1 +1,0 @@
--I/mnt/programs2/blackhole_sim/src -I/mnt/programs2/blackhole_sim/extern -I/mnt/programs2/blackhole_sim/build_web/gladsources/glad_gl_es_30/include -I"/mnt/programs2/blackhole_sim/build_web/_deps/imgui-src" -I"/mnt/programs2/blackhole_sim/build_web/_deps/imgui-src/backends" -I"/mnt/programs2/blackhole_sim/build_web/_deps/glm-src"

@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/mnt/programs2/blackhole_sim/build_web/_deps/glad-subbuild/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
