@@ -4,6 +4,8 @@ A real-time gravitational lensing simulation using OpenGL.
 
 ![Black Hole Simulator Screenshot](github_assets/screenshot.png)
 
+**[🌌 View Live Demo](https://blackhole.soep.tech)**
+
 ## Build Instructions
 
 ### Using the build script
@@ -54,6 +56,22 @@ If you prefer to build the project manually, you can use CMake:
     ./bin/Release/black_hole_simulator
     ```
 
+### Web Build (Docker)
+
+To build the WebAssembly version and serve it locally, you can use the provided Dockerfile. This handles the Emscripten toolchain and dependencies automatically.
+
+1. **Build the Docker image:**
+
+   ```bash
+   docker build -t blackhole-sim .
+   ```
+
+2. **Run the container:** This compiles the project and starts a local Python server.
+
+   ```bash
+   docker run -p 8000:8000 blackhole-sim
+   ```
+
 ## Controls
 
 ### Camera Movement
@@ -70,4 +88,3 @@ If you prefer to build the project manually, you can use CMake:
 - **Rotate:** Hold down the **right mouse button** and move the mouse to look around.
 
 You can adjust the camera sensitivity and movement speed, and invert the camera controls in the application's UI window.
-
