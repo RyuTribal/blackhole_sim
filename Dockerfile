@@ -6,6 +6,7 @@ WORKDIR /app
 
 COPY CMakeLists.txt .
 COPY src ./src
+COPY extern ./extern
 COPY assets ./assets
 COPY web/index.html ./web/index.html 
 
