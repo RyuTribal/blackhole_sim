@@ -1,5 +1,7 @@
 FROM emscripten/emsdk:latest AS builder
 
+RUN python3 -m pip install jinja2
+
 WORKDIR /app
 
 COPY CMakeLists.txt .
@@ -12,13 +14,12 @@ RUN mkdir build_web
 WORKDIR /app/build_web
 RUN emcmake cmake .. -DIS_WEB=ON -DCMAKE_BUILD_TYPE=Release
 
-# Build the project
-# This generates black_hole_simulator.html, .js, .wasm, and .data
 RUN emmake make
 
 FROM python:3.9-alpine
 
 WORKDIR /server
+
 
 COPY --from=builder /app/build_web/black_hole_simulator.html ./index.html
 COPY --from=builder /app/build_web/black_hole_simulator.js ./
