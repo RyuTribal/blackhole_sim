@@ -1,140 +1,453 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Black Hole Simulator</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #000;
+        color: #eee;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
+          sans-serif;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        outline: none;
+      }
+
+      #status {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 8px 12px;
+        border-radius: 6px;
+        pointer-events: none;
+        font-size: 0.9em;
+        backdrop-filter: blur(4px);
+      }
+
+      #settings-panel {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(15, 15, 15, 0.85);
+        width: 320px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 8px;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        font-size: 0.85rem;
+      }
+      #settings-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+      #settings-panel::-webkit-scrollbar-thumb {
+        background: #444;
+        border-radius: 3px;
+      }
+
+      details {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      details:last-child {
+        border-bottom: none;
+      }
+
+      summary {
+        padding: 10px 15px;
+        cursor: pointer;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        user-select: none;
+        background: rgba(255, 255, 255, 0.05);
+        list-style: none; /* Hide default arrow */
+      }
+      summary:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      summary::after {
+        content: "+";
+        float: right;
+        font-weight: bold;
+      }
+      details[open] summary::after {
+        content: "-";
+      }
+
+      .content {
+        padding: 15px;
+      }
+
+      .control-group {
+        margin-bottom: 12px;
+      }
+      label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        color: #ccc;
+      }
+      span.val {
+        font-family: monospace;
+        color: #4af;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        -webkit-appearance: none;
+        background: transparent;
+        margin: 5px 0;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        background: #444;
+        border-radius: 2px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 14px;
+        width: 14px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        margin-top: -5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      }
+
+      .vec3-input {
+        display: flex;
+        gap: 5px;
+      }
+      .vec3-input input {
+        width: 100%;
+        background: #222;
+        border: 1px solid #444;
+        color: white;
+        padding: 4px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+
+      .note {
+        font-size: 0.8em;
+        color: #888;
+        font-style: italic;
+        margin-top: 5px;
+      }
+
+      ul.keys {
+        padding-left: 20px;
+        margin: 5px 0;
+        color: #aaa;
+      }
+      ul.keys li {
+        margin-bottom: 4px;
+      }
+      b {
+        color: #fff;
+      }
+
+      @media (max-width: 600px) {
+        #settings-panel {
+          width: auto;
+          left: 15px;
+          right: 15px;
+          max-height: 50vh;
         }
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        #status {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        #mobile-unsupported {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            font-size: 1.5em;
-            text-align: center;
-            padding-top: 20%;
-            box-sizing: border-box;
-        }
-        #controls {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
-            font-family: monospace;
-        }
-        #controls h3 {
-            margin-top: 0;
-        }
-        #controls ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        #controls li {
-            margin-bottom: 5px;
-        }
+      }
     </style>
-</head>
-<body>
-    <div id="mobile-unsupported">
-        <p>This application is not supported on mobile devices due to lack of touch controls.</p>
-    </div>
-    <canvas id="canvas"></canvas>
-    <div id="status">Initializing...</div>
-    <div id="controls">
-        <h3>Controls</h3>
-        <ul>
-            <li><b>W, A, S, D</b>: Move Camera</li>
-            <li><b>Space</b>: Move Up</li>
-            <li><b>Left Ctrl</b>: Move Down</li>
-            <li><b>Right Mouse + Drag</b>: Rotate</li>
-        </ul>
+  </head>
+  <body>
+    <canvas
+      id="canvas"
+      oncontextmenu="event.preventDefault()"
+      tabindex="-1"
+    ></canvas>
+    <div id="status">Downloading...</div>
+
+    <div id="settings-panel">
+      <details open>
+        <summary>Black Hole Physics</summary>
+        <div class="content">
+          <div class="control-group">
+            <label>Position (X, Y, Z)</label>
+            <div class="vec3-input">
+              <input
+                type="number"
+                value="0.0"
+                step="0.5"
+                onchange="updatePos('x', this.value)"
+              />
+              <input
+                type="number"
+                value="0.0"
+                step="0.5"
+                onchange="updatePos('y', this.value)"
+              />
+              <input
+                type="number"
+                value="-15.0"
+                step="0.5"
+                onchange="updatePos('z', this.value)"
+              />
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>Solar Mass <span class="val" id="v-mass">0.5</span></label>
+            <input
+              type="range"
+              min="0.1"
+              max="5.0"
+              step="0.1"
+              value="0.5"
+              oninput="updateMass(this.value)"
+            />
+            <div class="note">1 Solar Mass ≈ 1.989 × 10<sup>30</sup> kg</div>
+          </div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Accretion Disk</summary>
+        <div class="content">
+          <div class="control-group">
+            <label>
+              <span>Show Disk</span>
+              <input
+                type="checkbox"
+                checked
+                onchange="Module.SetShowDisk(this.checked)"
+              />
+            </label>
+          </div>
+
+          <div class="control-group">
+            <label>Gravity Bend <span class="val" id="v-bend">5.0</span></label>
+            <input
+              id="in-bend"
+              type="range"
+              min="0.0"
+              max="15.0"
+              step="0.1"
+              value="5.0"
+              oninput="updateDisk()"
+            />
+          </div>
+
+          <div class="control-group">
+            <label>Height <span class="val" id="v-height">0.35</span></label>
+            <input
+              id="in-height"
+              type="range"
+              min="0.01"
+              max="2.0"
+              step="0.01"
+              value="0.35"
+              oninput="updateDisk()"
+            />
+          </div>
+
+          <div class="control-group">
+            <label>Intensity <span class="val" id="v-int">30</span></label>
+            <input
+              id="in-int"
+              type="range"
+              min="0.0"
+              max="200.0"
+              step="1.0"
+              value="30.0"
+              oninput="updateDisk()"
+            />
+          </div>
+
+          <div class="control-group">
+            <label>Density <span class="val" id="v-alpha">3.0</span></label>
+            <input
+              id="in-alpha"
+              type="range"
+              min="0.0"
+              max="20.0"
+              step="0.1"
+              value="3.0"
+              oninput="updateDisk()"
+            />
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Simulation Quality</summary>
+        <div class="content">
+          <div class="control-group">
+            <label>Min Step <span class="val" id="v-smin">0.02</span></label>
+            <input
+              id="in-smin"
+              type="range"
+              min="0.001"
+              max="0.1"
+              step="0.001"
+              value="0.02"
+              oninput="updateSim()"
+            />
+          </div>
+          <div class="control-group">
+            <label>Max Step <span class="val" id="v-smax">2.0</span></label>
+            <input
+              id="in-smax"
+              type="range"
+              min="0.1"
+              max="10.0"
+              step="0.1"
+              value="2.0"
+              oninput="updateSim()"
+            />
+          </div>
+          <div class="control-group">
+            <label>Max Steps <span class="val" id="v-steps">600</span></label>
+            <input
+              id="in-steps"
+              type="range"
+              min="10"
+              max="2000"
+              step="10"
+              value="600"
+              oninput="updateSim()"
+            />
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Controls</summary>
+        <div class="content">
+          <ul class="keys">
+            <li><b>W A S D</b> - Move Camera</li>
+            <li><b>Space</b> - Move Up</li>
+            <li><b>L-Ctrl</b> - Move Down</li>
+            <li><b>L-Shift</b> - Sprint (5x)</li>
+            <li><b>Right Click</b> - Rotate View</li>
+          </ul>
+        </div>
+      </details>
     </div>
 
-    <script type='text/javascript'>
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            document.getElementById('mobile-unsupported').style.display = 'block';
-            document.getElementById('canvas').style.display = 'none';
-            document.getElementById('status').style.display = 'none';
-            document.getElementById('controls').style.display = 'none';
+    <script type="text/javascript">
+      var pos = { x: 0.0, y: 0.0, z: -15.0 };
+
+      function updatePos(axis, val) {
+        pos[axis] = parseFloat(val);
+        if (Module && Module.SetPosition)
+          Module.SetPosition(pos.x, pos.y, pos.z);
+      }
+
+      function updateMass(val) {
+        document.getElementById("v-mass").innerText = val;
+        if (Module && Module.SetMass) Module.SetMass(parseFloat(val));
+      }
+
+      function updateDisk() {
+        var bend = parseFloat(document.getElementById("in-bend").value);
+        var height = parseFloat(document.getElementById("in-height").value);
+        var intent = parseFloat(document.getElementById("in-int").value);
+        var alpha = parseFloat(document.getElementById("in-alpha").value);
+
+        document.getElementById("v-bend").innerText = bend.toFixed(1);
+        document.getElementById("v-height").innerText = height.toFixed(2);
+        document.getElementById("v-int").innerText = intent.toFixed(0);
+        document.getElementById("v-alpha").innerText = alpha.toFixed(1);
+
+        if (Module && Module.SetDiskParams) {
+          Module.SetDiskParams(height, intent, alpha, bend);
         }
+      }
 
-        var statusElement = document.getElementById('status');
-        var Module = {
-            preRun: [],
-            postRun: [],
-            print: (function() {
-                return function(text) {
-                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-                    console.log(text);
-                };
-            })(),
-            printErr: function(text) {
-                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-                console.error(text);
+      function updateSim() {
+        var smin = parseFloat(document.getElementById("in-smin").value);
+        var smax = parseFloat(document.getElementById("in-smax").value);
+        var steps = parseInt(document.getElementById("in-steps").value);
+
+        document.getElementById("v-smin").innerText = smin.toFixed(3);
+        document.getElementById("v-smax").innerText = smax.toFixed(1);
+        document.getElementById("v-steps").innerText = steps;
+
+        if (Module && Module.SetSimParams) {
+          Module.SetSimParams(smin, smax, steps);
+        }
+      }
+
+      var statusElement = document.getElementById("status");
+      var Module = {
+        preRun: [],
+        postRun: [],
+        print: (text) => console.log(text),
+        printErr: (text) => console.error(text),
+        canvas: (function () {
+          var canvas = document.getElementById("canvas");
+          canvas.addEventListener(
+            "webglcontextlost",
+            (e) => {
+              alert("WebGL context lost. Reload page.");
+              e.preventDefault();
             },
-            canvas: (function() {
-                var canvas = document.getElementById('canvas');
-                canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-                canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); });
-                return canvas;
-            })(),
-            setStatus: function(text) {
-                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
-                if (text === Module.setStatus.last.text) return;
-                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-                var now = Date.now();
-                if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, throttle it
-                Module.setStatus.last.time = now;
-                Module.setStatus.last.text = text;
-                if (m)
-                    text = m[1];
-                statusElement.innerHTML = text;
-                if(text === '') {
-                    statusElement.style.display = 'none';
-                }
-            },
-            totalDependencies: 0,
-            monitorRunDependencies: function(left) {
-                this.totalDependencies = Math.max(this.totalDependencies, left);
-                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : '');
-            }
-        };
-        Module.setStatus('Downloading...');
-        window.onerror = function() {
-            Module.setStatus('Exception thrown, see JavaScript console');
-        };
+            false,
+          );
+          canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+          return canvas;
+        })(),
+        setStatus: function (text) {
+          if (!Module.setStatus.last)
+            Module.setStatus.last = { time: Date.now(), text: "" };
+          if (text === Module.setStatus.last.text) return;
+
+          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          var now = Date.now();
+          if (m && now - Module.setStatus.last.time < 30) return;
+          Module.setStatus.last.time = now;
+          Module.setStatus.last.text = text;
+
+          if (m) text = m[1];
+          statusElement.innerHTML = text;
+          if (text === "") statusElement.style.display = "none";
+          else statusElement.style.display = "block";
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function (left) {
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          Module.setStatus(
+            left
+              ? "Preparing... (" +
+                  (this.totalDependencies - left) +
+                  "/" +
+                  this.totalDependencies +
+                  ")"
+              : "All downloads complete.",
+          );
+        },
+      };
+
+      window.onerror = function (event) {
+        Module.setStatus("Exception thrown, see console");
+        statusElement.style.background = "rgba(255,0,0,0.5)";
+      };
     </script>
     {{{ SCRIPT }}}
-</body>
+  </body>
 </html>

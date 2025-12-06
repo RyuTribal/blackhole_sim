@@ -1,4 +1,5 @@
 #include "FinalImage.hpp"
+#include <iostream>
 
 namespace Sim {
 FinalImage::FinalImage(int width, int height)

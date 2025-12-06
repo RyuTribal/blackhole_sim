@@ -10,12 +10,10 @@ public:
   ~FinalImage();
 
   void Draw(const Camera &camera);
+  void OnResize(int width, int height);
 
   GLuint GetOutputTexture() { return m_OutputTexture; }
   GLuint GetFBO() { return m_FBO; }
-
-private:
-  void OnResize(int width, int height);
 
 private:
 #if defined(IS_WEB)

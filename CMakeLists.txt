@@ -15,21 +15,25 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(FetchContent)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
-# --- Dependencies ---
-
-# 1. GLFW Logic: Only fetch if NOT on Web
 if(NOT IS_WEB)
     FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
         GIT_TAG 3.4
     )
-    FetchContent_MakeAvailable(glfw)
     
     set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "")
     set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "")
     set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "")
     set(GLFW_INSTALL OFF CACHE INTERNAL "")
+
+    FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG v1.92.5
+    )
+
+    FetchContent_MakeAvailable(glfw imgui)
 endif()
 
 FetchContent_Declare(
@@ -47,54 +51,45 @@ FetchContent_Declare(
     SOURCE_SUBDIR  cmake
 )
 
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.92.5
-)
+FetchContent_MakeAvailable(glm glad)
 
-FetchContent_MakeAvailable(glm glad imgui)
 
-# 2. GLAD / OpenGL Version Logic
 if(IS_WEB)
-    # WebGL 2.0 = GLES 3.0
     glad_add_library(glad_gl_es_30 STATIC REPRODUCIBLE LOADER API gles2:core=3.0)
 else()
     glad_add_library(glad_gl_core_43 STATIC REPRODUCIBLE LOADER API gl:core=4.3)
 endif()
 
-# 3. ImGui Backend Logic
-FetchContent_GetProperties(imgui)
-if(NOT imgui_POPULATED)
-    FetchContent_Populate(imgui)
-endif()
+if(NOT IS_WEB)
+    FetchContent_GetProperties(imgui)
+    if(NOT imgui_POPULATED)
+        FetchContent_Populate(imgui)
+    endif()
 
-set(IMGUI_SOURCES
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
-)
+    set(IMGUI_SOURCES
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_demo.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    )
 
-add_library(imgui_backend STATIC ${IMGUI_SOURCES})
-target_include_directories(imgui_backend PUBLIC
-    ${imgui_SOURCE_DIR}
-    ${imgui_SOURCE_DIR}/backends
-)
+    add_library(imgui_backend STATIC ${IMGUI_SOURCES})
+    target_include_directories(imgui_backend PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+    )
 
-if(IS_WEB)
-    # On Web, we link glad_gl_es_30, but NO 'glfw' target (Emscripten provides it globally)
-    target_link_libraries(imgui_backend PUBLIC glad_gl_es_30)
-else()
     target_link_libraries(imgui_backend PUBLIC glfw glad_gl_core_43)
+    target_compile_definitions(imgui_backend PUBLIC 
+        IMGUI_DISABLE_OBSOLETE_FUNCTIONS 
+        IMGUI_IMPL_OPENGL_LOADER_GLAD2 
+        GLM_ENABLE_EXPERIMENTAL
+    )
 endif()
 
-target_compile_definitions(imgui_backend PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS IMGUI_IMPL_OPENGL_LOADER_GLAD2 GLM_ENABLE_EXPERIMENTAL)
-
-# 4. Main Executable
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
     "${CMAKE_SOURCE_DIR}/src/*.c"
@@ -103,32 +98,31 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE src extern)
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
 if(IS_WEB)
     target_link_libraries(${PROJECT_NAME}
         PRIVATE
-            # No 'glfw' here
             glad_gl_es_30
-            imgui_backend
             glm::glm
     )
+    
     target_include_directories(${PROJECT_NAME} PRIVATE 
         ${CMAKE_BINARY_DIR}/gladsources/glad_gl_es_30/include
     )
     
     target_compile_definitions(${PROJECT_NAME} PUBLIC IS_WEB)
     
-    # Crucial Flags for Emscripten
     target_link_options(${PROJECT_NAME} PRIVATE
         "-sUSE_GLFW=3"
         "-sFULL_ES3=1"
         "-sUSE_WEBGL2=1"
         "-sWASM=1"
         "-sALLOW_MEMORY_GROWTH=1"
+        "--bind" 
         "-sEXPORTED_RUNTIME_METHODS=['ccall', 'cwrap']"
-        --shell-file
-        "${CMAKE_SOURCE_DIR}/web/index.html"
-        --preload-file
-        "${CMAKE_SOURCE_DIR}/assets@/assets"
+        --shell-file "${CMAKE_SOURCE_DIR}/web/index.html"
+        --preload-file "${CMAKE_SOURCE_DIR}/assets@/assets"
     )
 else()
     target_link_libraries(${PROJECT_NAME}
@@ -138,6 +132,7 @@ else()
             imgui_backend
             glm::glm
     )
+    
     target_include_directories(${PROJECT_NAME} PRIVATE 
         ${CMAKE_BINARY_DIR}/gladsources/glad_gl_core_43/include
     )

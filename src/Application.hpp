@@ -1,9 +1,9 @@
 #pragma once
 
+#include "BlackHole.hpp"
 #include "Camera.hpp"
 #include "Cubemap.hpp"
 #include "FinalImage.hpp"
-#include "BlackHole.hpp"
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
@@ -21,8 +21,10 @@ public:
 
   void Run();
 
-private: // Methods
+  BlackHole *GetBlackHole() { return m_BlackHole.get(); }
   void MainLoop();
+
+private: // Methods
   void Initialize();
   void Shutdown();
   void OnWindowResized(int width, int height);

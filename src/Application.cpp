@@ -3,6 +3,10 @@
 
 #if defined(IS_WEB)
 #include <emscripten.h>
+#include <emscripten/html5.h>
+EM_JS(int, get_browser_width, (), { return window.innerWidth; });
+
+EM_JS(int, get_browser_height, (), { return window.innerHeight; });
 #endif
 
 #include <chrono>
@@ -20,9 +24,11 @@
 #include <glad/gl.h>
 #endif
 
+#ifndef IS_WEB
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#endif
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -156,6 +162,8 @@ void Application::Initialize() {
   glfwGetWindowContentScale(m_Window, &xScale, &yScale);
   OnContentScaleChanged(xScale, yScale);
 
+#ifndef IS_WEB
+
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
@@ -187,6 +195,8 @@ void Application::Initialize() {
 #endif
 
   m_ImguiInitialized = true;
+
+#endif
 }
 
 void Application::MainLoop() {
@@ -197,7 +207,22 @@ void Application::MainLoop() {
     return;
   }
 
+#if defined(IS_WEB)
+  int current_w, current_h;
+  glfwGetWindowSize(m_Window, &current_w, &current_h);
+  int desired_w = get_browser_width();
+  int desired_h = get_browser_height();
+
+  // Resize if browser dimensions changed
+  if ((desired_w != current_w || desired_h != current_h) && desired_w > 1 &&
+      desired_h > 1) {
+    glfwSetWindowSize(m_Window, desired_w, desired_h);
+  }
+#endif
+
   glfwPollEvents();
+
+#ifndef IS_WEB
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
@@ -247,8 +272,8 @@ void Application::MainLoop() {
   }
   ImGui::DragInt("Movement Speed", &m_MovementSpeed);
   auto camera_pos = m_Camera.GetPosition();
-  ImGui::Text("Position X: %.2f, Y: %.2f, Z: %.2f", camera_pos.x,
-              camera_pos.y, camera_pos.z);
+  ImGui::Text("Position X: %.2f, Y: %.2f, Z: %.2f", camera_pos.x, camera_pos.y,
+              camera_pos.z);
   ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
   ImGui::Text("Renderer info");
@@ -260,6 +285,8 @@ void Application::MainLoop() {
 
   ImGui::Render();
 
+#endif
+
   glClearColor(m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -269,7 +296,9 @@ void Application::MainLoop() {
 
   m_FinalImage->Draw(m_Camera);
 
+#ifndef IS_WEB
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
 
   glfwSwapBuffers(m_Window);
 
@@ -301,6 +330,7 @@ void Application::Run() {
 void Application::Shutdown() {
   glFinish();
 
+#ifndef IS_WEB
   if (m_ImguiInitialized) {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -309,6 +339,8 @@ void Application::Shutdown() {
   } else if (ImGui::GetCurrentContext()) {
     ImGui::DestroyContext();
   }
+#endif
+
   if (m_Window) {
     glfwDestroyWindow(m_Window);
     m_Window = nullptr;
